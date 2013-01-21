@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html class="no-js">
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0" />
+        <title>youtube-player-timesync</title>
+    </head>
+    <body>
+        <div id="player"></div>
+        <div id="time"></div>
+        <a href="#" id="click-handler">Click on me!</a>
+        <script>
+            var player;
+            function onYouTubeIframeAPIReady()
+            {
+                player = new YT.Player('player', {
+                    height: '390',
+                    width: '640',
+                    videoId: 'u1zgFlCw8Aw',
+                    events: {
+                        'onReady': onPlayerReady,
+                        'onStateChange': onPlayerStateChange
+                    }
+                });
+            }
+
+            function onPlayerReady(event)
+            {
+                event.target.playVideo();
+            }
+
+            function onPlayerStateChange(event)
+            {
+                if (event.data === YT.PlayerState.PLAYING)
+                {
+
+                }
+            }
+
+            (function()
+            {
+                var tag = document.createElement('script');
+
+                tag.src = "//www.youtube.com/iframe_api";
+                var firstScriptTag = document.getElementsByTagName('script')[0];
+                firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+            })();
+        </script>
+    </body>
+</html>
