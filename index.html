@@ -11,7 +11,15 @@
         <div id="time"></div>
         <a href="#" id="click-handler">Click on me!</a>
         <script>
+            var time = document.getElementById('time');
+            var interval;
             var player;
+
+            function handlePlayerInterval()
+            {
+                time.innerHTML = player.getCurrentTime();
+            }
+
             function onYouTubeIframeAPIReady()
             {
                 player = new YT.Player('player', {
@@ -32,10 +40,29 @@
 
             function onPlayerStateChange(event)
             {
-                if (event.data === YT.PlayerState.PLAYING)
+                switch (event.data)
                 {
+                    case YT.PlayerState.PLAYING:
+                        playerPlaying();
 
+                    break;
+
+                    case YT.PlayerState.PAUSED:
+                    case YT.PlayerState.ENDED:
+                        playerPaused();
+
+                    break;
                 }
+            }
+
+            function playerPaused()
+            {
+                clearInterval(interval);
+            }
+
+            function playerPlaying()
+            {
+                interval = setInterval(handlePlayerInterval, 100);
             }
 
             (function()
