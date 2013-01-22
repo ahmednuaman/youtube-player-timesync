@@ -9,14 +9,79 @@
     <body>
         <div id="player"></div>
         <div id="time"></div>
-        <a href="#" id="click-handler">Click on me!</a>
+        <a href="#" id="click-handler" style="display: none;">Click on me! <span id="message"></span></a>
         <script>
+            var EVENT = {
+                start: 'start',
+                stop: 'stop'
+            };
+
+            var AnEvent = function(type)
+            {
+                return {
+                    type: type,
+                    data: arguments[1]
+                };
+            }
+            var data = {
+                1234: new AnEvent(EVENT.start, 'hellos'),
+                5678: new AnEvent(EVENT.stop),
+                9101: new AnEvent(EVENT.start, 'yellows'),
+                11213: new AnEvent(EVENT.stop)
+            };
+            var link = document.getElementById('click-handler');
+            var message = document.getElementById('message');
             var time = document.getElementById('time');
             var interval;
             var player;
 
+            function handleEvent(event)
+            {
+                switch (event.type)
+                {
+                    case EVENT.start:
+                        link.style.display = 'block';
+
+                        if (event.data)
+                        {
+                            message.innerHTML = event.data;
+                        }
+
+                    break;
+
+                    case EVENT.stop:
+                        link.style.display = 'none';
+
+                    break;
+                }
+            }
+
             function handlePlayerInterval()
             {
+                var hundredths = player.getCurrentTime() * 1000;
+                var event;
+                var mills;
+
+                if (!Object.keys(data).length)
+                {
+                    clearInterval(interval);
+                }
+
+                for (mills in data)
+                {
+                    if (mills <= hundredths)
+                    {
+                        event = data[mills];
+
+                        delete data[mills];
+                    }
+                }
+
+                if (event)
+                {
+                    handleEvent(event);
+                }
+
                 time.innerHTML = player.getCurrentTime();
             }
 
