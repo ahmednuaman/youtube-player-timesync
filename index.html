@@ -4,50 +4,115 @@
         <meta charset="utf-8" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0" />
+        <style>
+            #holder {
+                display: block;
+                width: 700px;
+                height: 500px;
+                background: blue;
+            }
+
+            #player {
+                display: block;
+                position: absolute;
+            }
+
+            #pointer,
+            #pointer-glow {
+                display: block;
+                position: absolute;
+                width: 137px;
+                height: 200px;
+                background: url(img/pointer.png);
+                pointer-events: none;
+            }
+
+            #pointer-glow {
+                background: url(img/pointer-glow.png);
+            }
+        </style>
         <title>youtube-player-timesync</title>
     </head>
     <body>
-        <div id="player"></div>
+        <div id="holder">
+            <div id="player"></div>
+            <div id="pointer"></div>
+            <div id="pointer-glow" style="opacity: 0;"></div>
+        </div>
         <div id="time"></div>
-        <a href="#" id="click-handler" style="display: none;">Click on me! <span id="message"></span></a>
+        <script src="js/TweenMax.js"></script>
+        <script src="js/easing/EasePack.js"></script>
+        <script src="js/plugins/CSSPlugin.js"></script>
+        <script src="js/plugins/CSSRulePlugin.js"></script>
         <script>
             var EVENT = {
                 start: 'start',
                 stop: 'stop'
             };
 
-            var AnEvent = function(type)
-            {
+            var AnEvent = function (type) {
                 return {
                     type: type,
                     data: arguments[1]
                 };
             }
+
+            var Pos = function (x, y) {
+                return {
+                    x: x,
+                    y: y
+                };
+            }
+
             var data = {
-                1234: new AnEvent(EVENT.start, 'hellos'),
+                1234: new AnEvent(EVENT.start, new Pos(100, 100)),
                 5678: new AnEvent(EVENT.stop),
-                9101: new AnEvent(EVENT.start, 'yellows'),
-                11213: new AnEvent(EVENT.stop)
+                9101: new AnEvent(EVENT.start, new Pos(600, 300)),
+                11213: new AnEvent(EVENT.stop),
+                15000: new AnEvent(EVENT.start, new Pos(200, 200)),
+                18000: new AnEvent(EVENT.stop),
+                20000: new AnEvent(EVENT.start, new Pos(0, 400))
             };
-            var link = document.getElementById('click-handler');
-            var message = document.getElementById('message');
+            var holder = document.getElementById('holder');
+            var holderProps = {
+                width: holder.offsetWidth,
+                height: holder.offsetHeight
+            };
+            var pointer = document.getElementById('pointer');
+            var pointerGlow = document.getElementById('pointer-glow');
+            var pointerProps = {
+                width: pointer.offsetWidth,
+                height: pointer.offsetHeight
+            };
             var time = document.getElementById('time');
             var interval;
+            var margins;
             var player;
 
-            function handleEvent (event) {
+            margins = {
+                x: holderProps.width - pointerProps.width,
+                y: holderProps.height - pointerProps.height
+            };
+
+            function handleEvent () {
+                var event = arguments[0] || {
+                    type: null
+                };
+
                 switch (event.type) {
                     case EVENT.start:
-                        link.style.display = 'block';
+                        pointer.style.display = 'block';
+                        pointerGlow.style.display = 'block';
 
                         if (event.data) {
-                            message.innerHTML = event.data;
+                            tweenPointerTo(event.data.x, event.data.y);
                         };
 
                     break;
 
-                    case EVENT.stop:
-                        link.style.display = 'none';
+                    default:
+                        pointer.style.display = 'none';
+                        pointerGlow.style.display = 'none';
 
                     break;
                 };
@@ -79,8 +144,8 @@
 
             function onYouTubeIframeAPIReady () {
                 player = new YT.Player('player', {
-                    height: '390',
-                    width: '640',
+                    height: holderProps.height,
+                    width: holderProps.width,
                     videoId: 'u1zgFlCw8Aw',
                     playerVars: {
                         controls: 0,
@@ -96,7 +161,11 @@
             }
 
             function onPlayerReady (event) {
+                pointerGlowStart();
+
                 event.target.playVideo();
+
+                handleEvent();
             }
 
             function onPlayerStateChange (event) {
@@ -120,6 +189,54 @@
 
             function playerPlaying () {
                 interval = setInterval(handlePlayerInterval, 100);
+            }
+
+            function pointerGlowStart () {
+                TweenMax.to(pointerGlow, .5, {
+                    css: {
+                        opacity: 1
+                    },
+                    yoyo: true,
+                    repeat: -1
+                });
+            }
+
+            function tweenPointerTo (x, y) {
+                var rotation = 0;
+                var translateX = 0;
+                var translateY = 0;
+
+                if (x >= margins.x || y >= margins.y) {
+                    rotation = 180;
+                    translateX = -pointerProps.width;
+                    translateY = -pointerProps.height;
+                };
+
+                if (x >= margins.x && y <= pointerProps.height) {
+                    rotation = 90;
+                    translateX = -pointerProps.height;
+                    translateY = 0;
+                };
+
+                if (x <= pointerProps.width && y >= margins.y) {
+                    rotation = 270;
+                    translateX = pointerProps.height * .5;
+                    translateY = -pointerProps.height;
+                };
+
+                TweenMax.to([
+                    pointer,
+                    pointerGlow
+                ], 1, {
+                    css: {
+                        left: x,
+                        top: y,
+                        rotationZ: rotation,
+                        x: translateX,
+                        y: translateY
+                    },
+                    ease: Strong.easeOut
+                });
             }
 
             (function () {
