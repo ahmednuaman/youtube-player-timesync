@@ -10,11 +10,24 @@
                 width: 700px;
                 height: 500px;
                 background: blue;
+                overflow: hidden;
             }
 
             #player {
                 display: block;
                 position: absolute;
+            }
+
+            #hotspot-glow {
+                display: block;
+                position: absolute;
+                pointer-events: none;
+                width: 200px;
+                height: 200px;
+                background-image: -moz-radial-gradient(center center, circle, #fff 0%, rgba(255,255,255,0) 100%);
+                background-image: -o-radial-gradient(center center, 100px 100px, #fff 0%, rgba(255,255,255,0) 100%);
+                background-image: -webkit-radial-gradient(center center, 100px 100px, #fff 0%, rgba(255,255,255,0) 100%);
+                background-image: radial-gradient(center center, 100px 100px, #fff 0%, rgba(255,255,255,0) 100%);
             }
 
             #pointer,
@@ -36,12 +49,13 @@
     <body>
         <div id="holder">
             <div id="player"></div>
+            <div id="hotspot-glow"></div>
             <div id="pointer"></div>
             <div id="pointer-glow" style="opacity: 0;"></div>
         </div>
         <div id="time"></div>
         <script src="js/TweenMax.js"></script>
-        <script src="js/easing/EasePack.js"></script>
+        <!--<script src="js/easing/EasePack.js"></script>-->
         <script src="js/plugins/CSSPlugin.js"></script>
         <script src="js/plugins/CSSRulePlugin.js"></script>
         <script>
@@ -71,13 +85,20 @@
                 11213: new AnEvent(EVENT.stop),
                 15000: new AnEvent(EVENT.start, new Pos(200, 200)),
                 18000: new AnEvent(EVENT.stop),
-                20000: new AnEvent(EVENT.start, new Pos(0, 400))
+                20000: new AnEvent(EVENT.start, new Pos(0, 400)),
+                22000: new AnEvent(EVENT.stop)
             };
             var holder = document.getElementById('holder');
             var holderProps = {
                 width: holder.offsetWidth,
                 height: holder.offsetHeight
             };
+            var hotspotGlow = document.getElementById('hotspot-glow');
+            var hotspotGlowProps = {
+                width: hotspotGlow.offsetWidth * -.5,
+                height: hotspotGlow.offsetHeight * -.5
+            };
+            var played = 0;
             var pointer = document.getElementById('pointer');
             var pointerGlow = document.getElementById('pointer-glow');
             var pointerProps = {
@@ -85,6 +106,7 @@
                 height: pointer.offsetHeight
             };
             var time = document.getElementById('time');
+            var dataClone;
             var interval;
             var margins;
             var player;
@@ -94,6 +116,18 @@
                 y: holderProps.height - pointerProps.height
             };
 
+            function cloneObject (obj) {
+                var newObj = { };
+
+                for (var key in obj) {
+                    if (obj.hasOwnProperty(key)) {
+                        newObj[key] = obj[key];
+                    };
+                }
+
+                return newObj;
+            }
+
             function handleEvent () {
                 var event = arguments[0] || {
                     type: null
@@ -101,16 +135,25 @@
 
                 switch (event.type) {
                     case EVENT.start:
-                        pointer.style.display = 'block';
-                        pointerGlow.style.display = 'block';
-
                         if (event.data) {
-                            tweenPointerTo(event.data.x, event.data.y);
+                            if (played > 0) {
+                                hotspotGlow.style.display = 'block';
+                                hotspotGlow.style.left = event.data.x + hotspotGlowProps.width + 'px';
+                                hotspotGlow.style.top = event.data.y + hotspotGlowProps.height + 'px';
+                            };
+
+                            if (played > 1) {
+                                pointer.style.display = 'block';
+                                pointerGlow.style.display = 'block';
+
+                                tweenPointerTo(event.data.x, event.data.y);
+                            };
                         };
 
                     break;
 
                     default:
+                        hotspotGlow.style.display = 'none';
                         pointer.style.display = 'none';
                         pointerGlow.style.display = 'none';
 
@@ -123,15 +166,15 @@
                 var event;
                 var mills;
 
-                if (!Object.keys(data).length) {
+                if (!Object.keys(dataClone).length) {
                     clearInterval(interval);
                 };
 
-                for (mills in data) {
+                for (mills in dataClone) {
                     if (mills <= hundredths) {
-                        event = data[mills];
+                        event = dataClone[mills];
 
-                        delete data[mills];
+                        delete dataClone[mills];
                     };
                 };
 
@@ -146,7 +189,7 @@
                 player = new YT.Player('player', {
                     height: holderProps.height,
                     width: holderProps.width,
-                    videoId: 'u1zgFlCw8Aw',
+                    videoId: '5_sfnQDr1-o',
                     playerVars: {
                         controls: 0,
                         modestbranding: 1,
@@ -163,7 +206,7 @@
             function onPlayerReady (event) {
                 pointerGlowStart();
 
-                event.target.playVideo();
+                playerStart();
 
                 handleEvent();
             }
@@ -171,15 +214,27 @@
             function onPlayerStateChange (event) {
                 switch (event.data) {
                     case YT.PlayerState.PLAYING:
-                        playerPlaying();
+                        playerPlaying(event);
 
                     break;
 
                     case YT.PlayerState.PAUSED:
-                    case YT.PlayerState.ENDED:
-                        playerPaused();
+                        playerPaused(event);
 
                     break;
+
+                    case YT.PlayerState.ENDED:
+                        playerEnded(event);
+
+                    break;
+                };
+            }
+
+            function playerEnded () {
+                if (++played < 3) {
+                    playerStart();
+                } else {
+                    playerPaused();
                 };
             }
 
@@ -189,6 +244,14 @@
 
             function playerPlaying () {
                 interval = setInterval(handlePlayerInterval, 100);
+            }
+
+            function playerStart () {
+                dataClone = cloneObject(data);
+
+                player.seekTo(0);
+
+                player.playVideo();
             }
 
             function pointerGlowStart () {
@@ -227,15 +290,15 @@
                 TweenMax.to([
                     pointer,
                     pointerGlow
-                ], 1, {
+                ], 0, {
                     css: {
                         left: x,
                         top: y,
                         rotationZ: rotation,
                         x: translateX,
                         y: translateY
-                    },
-                    ease: Strong.easeOut
+                    }//,
+                    // ease: Strong.easeOut
                 });
             }
 
